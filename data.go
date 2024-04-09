@@ -204,3 +204,29 @@ func WriteInt64(bbuf *bytes.Buffer, intValue int64) error {
 	err := binary.Write(bbuf, binary.BigEndian, intValue)
 	return err
 }
+
+// Read a Big-endian single-precision 32-bit IEEE 754 floating point number from a byte buffer (Float)
+func ReadFloat32(bbuf *bytes.Buffer) (float32, error) {
+	var float32Value float32
+	err := binary.Read(bbuf, binary.BigEndian, &float32Value)
+	return float32Value, err
+}
+
+// Write a Big-endian single-precision 32-bit IEEE 754 floating point number to a byte buffer (Float)
+func WriteFloat32(bbuf *bytes.Buffer, floatVlaue float32) error {
+	err := binary.Write(bbuf, binary.BigEndian, floatVlaue)
+	return err
+}
+
+// Read a Big-endian double-precision 64-bit IEEE 754 floating point number from a byte buffer (Double)
+func ReadFloat64(bbuf *bytes.Buffer) (float64, error) {
+	var float64Value float64
+	err := binary.Read(bbuf, binary.BigEndian, &float64Value)
+	return float64Value, err
+}
+
+// Write a Big-endian double-precision 64-bit IEEE 754 floating point number to a byte buffer (Double)
+func WriteFloat64(bbuf *bytes.Buffer, floatVlaue float64) error {
+	err := binary.Write(bbuf, binary.BigEndian, floatVlaue)
+	return err
+}
