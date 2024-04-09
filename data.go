@@ -1,3 +1,7 @@
+// Written from documentation from https://wiki.vg/Protocol#Data_types
+// https://protobuf.dev/programming-guides/encoding/#varints is helpful too
+// wiki.vg is honestly a lifesaver
+
 package mcutils
 
 import (
@@ -8,7 +12,8 @@ import (
 const SEGMENT_BITS = 0x7F
 const CONTINUE_BIT = 0x80
 
-func readVarInt(bbuf bytes.Buffer) (int32, error) {
+// Takes a reference to a byte buffer object and returns an int32
+func ReadVarInt(bbuf *bytes.Buffer) (int32, error) {
 	var value, position int32
 	var currentByte byte
 	var err error
@@ -35,7 +40,8 @@ func readVarInt(bbuf bytes.Buffer) (int32, error) {
 	return value, nil
 }
 
-func readVarLong(bbuf bytes.Buffer) (int64, error) {
+// Takes a reference to a byte buffer and returns an int64
+func ReadVarLong(bbuf *bytes.Buffer) (int64, error) {
 	var value int64
 	var position int
 	var currentByte byte
@@ -63,7 +69,8 @@ func readVarLong(bbuf bytes.Buffer) (int64, error) {
 	return value, nil
 }
 
-func writeVarInt(bbuf bytes.Buffer, value int32) {
+// Writes a VarInt to a byte buffer, using a reference
+func WriteVarInt(bbuf *bytes.Buffer, value int32) {
 	for {
 		if (value &^ SEGMENT_BITS) == 0 {
 			bbuf.WriteByte(byte(value))
@@ -77,7 +84,8 @@ func writeVarInt(bbuf bytes.Buffer, value int32) {
 	}
 }
 
-func writeVarLong(bbuf bytes.Buffer, value int64) {
+// Writes a VarLong to a byte buffer, using a reference
+func WriteVarLong(bbuf *bytes.Buffer, value int64) {
 	for {
 		if (value &^ SEGMENT_BITS) == 0 {
 			bbuf.WriteByte(byte(value))
