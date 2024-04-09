@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"unicode/utf8"
 )
 
 const SEGMENT_BITS = 0x7F
@@ -228,5 +229,39 @@ func ReadFloat64(bbuf *bytes.Buffer) (float64, error) {
 // Write a Big-endian double-precision 64-bit IEEE 754 floating point number to a byte buffer (Double)
 func WriteFloat64(bbuf *bytes.Buffer, floatVlaue float64) error {
 	err := binary.Write(bbuf, binary.BigEndian, floatVlaue)
+	return err
+}
+
+// Read a unicode string from a byte buffer, assuming the string is prefixed by a VarInt with the length of the string
+func ReadString(bbuf *bytes.Buffer) (string, error) {
+	stringLength, err := ReadVarInt(bbuf)
+
+	if err != nil {
+		return "", err
+	}
+
+	if stringLength < 0 || stringLength > 32767 {
+		return "", errors.New("Invalid string length")
+	}
+
+	stringRunes := make([]rune, 0)
+
+	for i := 0; i < int(stringLength); i++ {
+		currentRune, _, err := bbuf.ReadRune()
+		if err != nil {
+			return "", err
+		}
+		stringRunes = append(stringRunes, currentRune)
+	}
+
+	return string(stringRunes), nil
+}
+
+// Write a unicode string to a byte buffer according to the protocol specification
+func WriteString(bbuf *bytes.Buffer, str string) error {
+	stringLength := utf8.RuneCountInString(str)
+	WriteVarInt(bbuf, int32(stringLength))
+
+	_, err := bbuf.WriteString(str)
 	return err
 }

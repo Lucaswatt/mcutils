@@ -9,15 +9,11 @@ import (
 func main() {
 	var bbuf bytes.Buffer
 
-	mcutils.WriteFloat32(&bbuf, 3.14159265358)
-	mcutils.WriteFloat64(&bbuf, 3.14159265358)
-	mcutils.WriteFloat32(&bbuf, 2198289)
-	mcutils.WriteFloat64(&bbuf, 230497026223456.2)
+	mcutils.WriteString(&bbuf, "Hello world! Here are some unicode characters: 你好, नमस्ते, مرحبا")
+	mcutils.WriteString(&bbuf, "this is a second string. Hopefully it works! extra unicode characters for good measure: 你好, नमस्ते, مرحبا")
 
 	fmt.Println(bbuf.Bytes())
 
-	fmt.Println(mcutils.ReadFloat32(&bbuf))
-	fmt.Println(mcutils.ReadFloat64(&bbuf))
-	fmt.Println(mcutils.ReadFloat32(&bbuf))
-	fmt.Println(mcutils.ReadFloat64(&bbuf))
+	fmt.Println(mcutils.ReadString(&bbuf))
+	fmt.Println(mcutils.ReadString(&bbuf))
 }
