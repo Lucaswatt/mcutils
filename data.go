@@ -6,6 +6,7 @@ package mcutils
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 )
 
@@ -128,32 +129,78 @@ func WriteBoolean(bbuf *bytes.Buffer, boolValue bool) error {
 
 // Read a signed 8 bit integer from a byte buffer (Byte)
 func ReadInt8(bbuf *bytes.Buffer) (int8, error) {
-	intByte, err := bbuf.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-
-	return int8(intByte), nil
+	var int8Value int8
+	err := binary.Read(bbuf, binary.BigEndian, &int8Value)
+	return int8Value, err
 }
 
 // Write a signed 8 bit integer to a byte buffer (Byte)
 func WriteInt8(bbuf *bytes.Buffer, intValue int8) error {
-	err := bbuf.WriteByte(byte(intValue))
+	err := binary.Write(bbuf, binary.BigEndian, intValue)
 	return err
 }
 
 // Read an unsigned 8 bit integer from a byte buffer (Unsigned byte)
 func ReadUint8(bbuf *bytes.Buffer) (uint8, error) {
-	intByte, err := bbuf.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-
-	return uint8(intByte), nil
+	var uint8Value uint8
+	err := binary.Read(bbuf, binary.BigEndian, &uint8Value)
+	return uint8Value, err
 }
 
 // Write an unsigned 8 bit integer to a byte buffer (Unsigned byte)
-func WriteUint8(bbuf bytes.Buffer, uintValue uint8) error {
-	err := bbuf.WriteByte(uintValue)
+func WriteUint8(bbuf *bytes.Buffer, uintValue uint8) error {
+	err := binary.Write(bbuf, binary.BigEndian, uintValue)
+	return err
+}
+
+// Read a Big-endian signed 16 bit integer from a byte buffer (Short)
+func ReadInt16(bbuf *bytes.Buffer) (int16, error) {
+	var int16Value int16
+	err := binary.Read(bbuf, binary.BigEndian, &int16Value)
+	return int16Value, err
+}
+
+// Write a Big-endian signed 16 bit integer to a byte buffer (Short)
+func WriteInt16(bbuf *bytes.Buffer, intValue int16) error {
+	err := binary.Write(bbuf, binary.BigEndian, intValue)
+	return err
+}
+
+// Read a Big-endian unsigned 16 bit integer from a byte buffer (Unsigned short)
+func ReadUint16(bbuf *bytes.Buffer) (uint16, error) {
+	var uint16Value uint16
+	err := binary.Read(bbuf, binary.BigEndian, &uint16Value)
+	return uint16Value, err
+}
+
+// Write a Big-endian unsigned 16 bit integer to a byte buffer (Unsigned short)
+func WriteUint16(bbuf *bytes.Buffer, uintValue uint16) error {
+	err := binary.Write(bbuf, binary.BigEndian, uintValue)
+	return err
+}
+
+// Read a Big-endian signed 32 bit integer from a byte buffer (Int)
+func ReadInt32(bbuf *bytes.Buffer) (int32, error) {
+	var int32Value int32
+	err := binary.Read(bbuf, binary.BigEndian, &int32Value)
+	return int32Value, err
+}
+
+// Write a Big-endian signed 32 bit integer to a byte buffer (Int)
+func WriteInt32(bbuf *bytes.Buffer, intValue int32) error {
+	err := binary.Write(bbuf, binary.BigEndian, intValue)
+	return err
+}
+
+// Read a Big-endian signed 64 bit integer from a byte buffer (Long)
+func ReadInt64(bbuf *bytes.Buffer) (int64, error) {
+	var int64Value int64
+	err := binary.Read(bbuf, binary.BigEndian, &int64Value)
+	return int64Value, err
+}
+
+// Write a Big-endian signed 64 bit integer to a byte buffer (Long)
+func WriteInt64(bbuf *bytes.Buffer, intValue int64) error {
+	err := binary.Write(bbuf, binary.BigEndian, intValue)
 	return err
 }
