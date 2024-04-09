@@ -98,3 +98,62 @@ func WriteVarLong(bbuf *bytes.Buffer, value int64) {
 		value >>= 7
 	}
 }
+
+// Read a boolean value from a byte buffer
+func ReadBoolean(bbuf *bytes.Buffer) (bool, error) {
+	boolByte, err := bbuf.ReadByte()
+	if err != nil {
+		return false, err
+	}
+
+	if boolByte == 0x00 {
+		return false, nil
+	} else {
+		return true, nil
+	}
+}
+
+// Write a boolean value to a byte buffer
+func WriteBoolean(bbuf *bytes.Buffer, boolValue bool) error {
+	var boolByte byte
+	if boolValue {
+		boolByte = 0x01
+	} else {
+		boolByte = 0x00
+	}
+
+	err := bbuf.WriteByte(boolByte)
+	return err
+}
+
+// Read a signed 8 bit integer from a byte buffer (Byte)
+func ReadInt8(bbuf *bytes.Buffer) (int8, error) {
+	intByte, err := bbuf.ReadByte()
+	if err != nil {
+		return 0, err
+	}
+
+	return int8(intByte), nil
+}
+
+// Write a signed 8 bit integer to a byte buffer (Byte)
+func WriteInt8(bbuf *bytes.Buffer, intValue int8) error {
+	err := bbuf.WriteByte(byte(intValue))
+	return err
+}
+
+// Read an unsigned 8 bit integer from a byte buffer (Unsigned byte)
+func ReadUint8(bbuf *bytes.Buffer) (uint8, error) {
+	intByte, err := bbuf.ReadByte()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint8(intByte), nil
+}
+
+// Write an unsigned 8 bit integer to a byte buffer (Unsigned byte)
+func WriteUint8(bbuf bytes.Buffer, uintValue uint8) error {
+	err := bbuf.WriteByte(uintValue)
+	return err
+}
