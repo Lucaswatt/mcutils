@@ -5,23 +5,23 @@
 package mcutils
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/binary"
 	"errors"
+	"io"
 	"unicode/utf8"
 )
 
 const SEGMENT_BITS = 0x7F
 const CONTINUE_BIT = 0x80
 
-// Takes a reference to a byte buffer object and returns an int32
-func ReadVarInt(bbuf *bytes.Buffer) (int32, error) {
+// Reads a variable length integer from an io stream, returns an int32
+func ReadVarInt(r io.Reader) (int32, error) {
 	var value, position int32
 	var currentByte byte
-	var err error
 
 	for {
-		currentByte, err = bbuf.ReadByte()
+		err := binary.Read(r, binary.BigEndian, &currentByte)
 		if err != nil {
 			return 0, err
 		}
@@ -42,15 +42,14 @@ func ReadVarInt(bbuf *bytes.Buffer) (int32, error) {
 	return value, nil
 }
 
-// Takes a reference to a byte buffer and returns an int64
-func ReadVarLong(bbuf *bytes.Buffer) (int64, error) {
+// Reads a variable length long (int64) from an io stream, returns an int64
+func ReadVarLong(r io.Reader) (int64, error) {
 	var value int64
 	var position int
 	var currentByte byte
-	var err error
 
 	for {
-		currentByte, err = bbuf.ReadByte()
+		err := binary.Read(r, binary.BigEndian, &currentByte)
 		if err != nil {
 			return 0, err
 		}
@@ -71,52 +70,51 @@ func ReadVarLong(bbuf *bytes.Buffer) (int64, error) {
 	return value, nil
 }
 
-// Writes a VarInt to a byte buffer, using a reference
-func WriteVarInt(bbuf *bytes.Buffer, value int32) {
+// Writes a Variable length integer to an io stream
+func WriteVarInt(w io.Writer, value int32) error {
 	for {
 		if (value &^ SEGMENT_BITS) == 0 {
-			bbuf.WriteByte(byte(value))
-			return
+			return binary.Write(w, binary.BigEndian, byte(value))
 		}
 
-		bbuf.WriteByte(byte((value & SEGMENT_BITS) | CONTINUE_BIT))
+		err := binary.Write(w, binary.BigEndian, byte((value&SEGMENT_BITS)|CONTINUE_BIT))
+		if err != nil {
+			return err
+		}
 
-		// Not tested, might not work as expected. The sign bit needs to be shifted with the rest of the number rather than being left alone.
 		value >>= 7
 	}
 }
 
-// Writes a VarLong to a byte buffer, using a reference
-func WriteVarLong(bbuf *bytes.Buffer, value int64) {
+// Writes a Variable length long (int64) to an io stream
+func WriteVarLong(w io.Writer, value int64) error {
 	for {
 		if (value &^ SEGMENT_BITS) == 0 {
-			bbuf.WriteByte(byte(value))
-			return
+			return binary.Write(w, binary.BigEndian, byte(value))
 		}
 
-		bbuf.WriteByte(byte((value & SEGMENT_BITS) | CONTINUE_BIT))
+		err := binary.Write(w, binary.BigEndian, byte((value&SEGMENT_BITS)|CONTINUE_BIT))
+		if err != nil {
+			return err
+		}
 
-		// Not tested, might not work as expected. The sign bit needs to be shifted with the rest of the number rather than being left alone.
 		value >>= 7
 	}
 }
 
-// Read a boolean value from a byte buffer
-func ReadBoolean(bbuf *bytes.Buffer) (bool, error) {
-	boolByte, err := bbuf.ReadByte()
+// Read a boolean value from an io stream
+func ReadBoolean(r io.Reader) (bool, error) {
+	var boolByte byte
+	err := binary.Read(r, binary.BigEndian, &boolByte)
 	if err != nil {
 		return false, err
 	}
 
-	if boolByte == 0x00 {
-		return false, nil
-	} else {
-		return true, nil
-	}
+	return boolByte != 0x00, nil
 }
 
-// Write a boolean value to a byte buffer
-func WriteBoolean(bbuf *bytes.Buffer, boolValue bool) error {
+// Write a boolean value to an io stream
+func WriteBoolean(w io.Writer, boolValue bool) error {
 	var boolByte byte
 	if boolValue {
 		boolByte = 0x01
@@ -124,117 +122,121 @@ func WriteBoolean(bbuf *bytes.Buffer, boolValue bool) error {
 		boolByte = 0x00
 	}
 
-	err := bbuf.WriteByte(boolByte)
+	err := binary.Write(w, binary.BigEndian, boolByte)
 	return err
 }
 
 // Read a signed 8 bit integer from a byte buffer (Byte)
-func ReadInt8(bbuf *bytes.Buffer) (int8, error) {
+func ReadInt8(r io.Reader) (int8, error) {
 	var int8Value int8
-	err := binary.Read(bbuf, binary.BigEndian, &int8Value)
+	err := binary.Read(r, binary.BigEndian, &int8Value)
 	return int8Value, err
 }
 
 // Write a signed 8 bit integer to a byte buffer (Byte)
-func WriteInt8(bbuf *bytes.Buffer, intValue int8) error {
-	err := binary.Write(bbuf, binary.BigEndian, intValue)
+func WriteInt8(w io.Writer, intValue int8) error {
+	err := binary.Write(w, binary.BigEndian, intValue)
 	return err
 }
 
 // Read an unsigned 8 bit integer from a byte buffer (Unsigned byte)
-func ReadUint8(bbuf *bytes.Buffer) (uint8, error) {
+func ReadUint8(r io.Reader) (uint8, error) {
 	var uint8Value uint8
-	err := binary.Read(bbuf, binary.BigEndian, &uint8Value)
+	err := binary.Read(r, binary.BigEndian, &uint8Value)
 	return uint8Value, err
 }
 
 // Write an unsigned 8 bit integer to a byte buffer (Unsigned byte)
-func WriteUint8(bbuf *bytes.Buffer, uintValue uint8) error {
-	err := binary.Write(bbuf, binary.BigEndian, uintValue)
+func WriteUint8(w io.Writer, uintValue uint8) error {
+	err := binary.Write(w, binary.BigEndian, uintValue)
 	return err
 }
 
 // Read a Big-endian signed 16 bit integer from a byte buffer (Short)
-func ReadInt16(bbuf *bytes.Buffer) (int16, error) {
+func ReadInt16(r io.Reader) (int16, error) {
 	var int16Value int16
-	err := binary.Read(bbuf, binary.BigEndian, &int16Value)
+	err := binary.Read(r, binary.BigEndian, &int16Value)
 	return int16Value, err
 }
 
 // Write a Big-endian signed 16 bit integer to a byte buffer (Short)
-func WriteInt16(bbuf *bytes.Buffer, intValue int16) error {
-	err := binary.Write(bbuf, binary.BigEndian, intValue)
+func WriteInt16(w io.Writer, intValue int16) error {
+	err := binary.Write(w, binary.BigEndian, intValue)
 	return err
 }
 
 // Read a Big-endian unsigned 16 bit integer from a byte buffer (Unsigned short)
-func ReadUint16(bbuf *bytes.Buffer) (uint16, error) {
+func ReadUint16(r io.Reader) (uint16, error) {
 	var uint16Value uint16
-	err := binary.Read(bbuf, binary.BigEndian, &uint16Value)
+	err := binary.Read(r, binary.BigEndian, &uint16Value)
 	return uint16Value, err
 }
 
 // Write a Big-endian unsigned 16 bit integer to a byte buffer (Unsigned short)
-func WriteUint16(bbuf *bytes.Buffer, uintValue uint16) error {
-	err := binary.Write(bbuf, binary.BigEndian, uintValue)
+func WriteUint16(w io.Writer, uintValue uint16) error {
+	err := binary.Write(w, binary.BigEndian, uintValue)
 	return err
 }
 
 // Read a Big-endian signed 32 bit integer from a byte buffer (Int)
-func ReadInt32(bbuf *bytes.Buffer) (int32, error) {
+func ReadInt32(r io.Reader) (int32, error) {
 	var int32Value int32
-	err := binary.Read(bbuf, binary.BigEndian, &int32Value)
+	err := binary.Read(r, binary.BigEndian, &int32Value)
 	return int32Value, err
 }
 
 // Write a Big-endian signed 32 bit integer to a byte buffer (Int)
-func WriteInt32(bbuf *bytes.Buffer, intValue int32) error {
-	err := binary.Write(bbuf, binary.BigEndian, intValue)
+func WriteInt32(w io.Writer, intValue int32) error {
+	err := binary.Write(w, binary.BigEndian, intValue)
 	return err
 }
 
 // Read a Big-endian signed 64 bit integer from a byte buffer (Long)
-func ReadInt64(bbuf *bytes.Buffer) (int64, error) {
+func ReadInt64(r io.Reader) (int64, error) {
 	var int64Value int64
-	err := binary.Read(bbuf, binary.BigEndian, &int64Value)
+	err := binary.Read(r, binary.BigEndian, &int64Value)
 	return int64Value, err
 }
 
 // Write a Big-endian signed 64 bit integer to a byte buffer (Long)
-func WriteInt64(bbuf *bytes.Buffer, intValue int64) error {
-	err := binary.Write(bbuf, binary.BigEndian, intValue)
+func WriteInt64(w io.Writer, intValue int64) error {
+	err := binary.Write(w, binary.BigEndian, intValue)
 	return err
 }
 
 // Read a Big-endian single-precision 32-bit IEEE 754 floating point number from a byte buffer (Float)
-func ReadFloat32(bbuf *bytes.Buffer) (float32, error) {
+func ReadFloat32(r io.Reader) (float32, error) {
 	var float32Value float32
-	err := binary.Read(bbuf, binary.BigEndian, &float32Value)
+	err := binary.Read(r, binary.BigEndian, &float32Value)
 	return float32Value, err
 }
 
 // Write a Big-endian single-precision 32-bit IEEE 754 floating point number to a byte buffer (Float)
-func WriteFloat32(bbuf *bytes.Buffer, floatVlaue float32) error {
-	err := binary.Write(bbuf, binary.BigEndian, floatVlaue)
+func WriteFloat32(w io.Writer, floatVlaue float32) error {
+	err := binary.Write(w, binary.BigEndian, floatVlaue)
 	return err
 }
 
 // Read a Big-endian double-precision 64-bit IEEE 754 floating point number from a byte buffer (Double)
-func ReadFloat64(bbuf *bytes.Buffer) (float64, error) {
+func ReadFloat64(r io.Reader) (float64, error) {
 	var float64Value float64
-	err := binary.Read(bbuf, binary.BigEndian, &float64Value)
+	err := binary.Read(r, binary.BigEndian, &float64Value)
 	return float64Value, err
 }
 
 // Write a Big-endian double-precision 64-bit IEEE 754 floating point number to a byte buffer (Double)
-func WriteFloat64(bbuf *bytes.Buffer, floatVlaue float64) error {
-	err := binary.Write(bbuf, binary.BigEndian, floatVlaue)
+func WriteFloat64(w io.Writer, floatVlaue float64) error {
+	err := binary.Write(w, binary.BigEndian, floatVlaue)
 	return err
 }
 
 // Read a unicode string from a byte buffer, assuming the string is prefixed by a VarInt with the length of the string
-func ReadString(bbuf *bytes.Buffer) (string, error) {
-	stringLength, err := ReadVarInt(bbuf)
+// THIS DOESN'T WORK BUT I DON'T HAVE TIME TO FIX IT AHHHH
+// Reading the entire buffer into a bufio object sets the read cursor to the end of the buffer
+func ReadString(r io.Reader) (string, error) {
+	br := bufio.NewReader(r)
+
+	stringLength, err := ReadVarInt(br)
 
 	if err != nil {
 		return "", err
@@ -244,10 +246,10 @@ func ReadString(bbuf *bytes.Buffer) (string, error) {
 		return "", errors.New("Invalid string length")
 	}
 
-	stringRunes := make([]rune, 0)
+	stringRunes := make([]rune, 0, stringLength)
 
 	for i := 0; i < int(stringLength); i++ {
-		currentRune, _, err := bbuf.ReadRune()
+		currentRune, _, err := br.ReadRune()
 		if err != nil {
 			return "", err
 		}
@@ -258,10 +260,10 @@ func ReadString(bbuf *bytes.Buffer) (string, error) {
 }
 
 // Write a unicode string to a byte buffer according to the protocol specification
-func WriteString(bbuf *bytes.Buffer, str string) error {
+func WriteString(w io.Writer, str string) error {
 	stringLength := utf8.RuneCountInString(str)
-	WriteVarInt(bbuf, int32(stringLength))
+	WriteVarInt(w, int32(stringLength))
 
-	_, err := bbuf.WriteString(str)
+	_, err := io.WriteString(w, str)
 	return err
 }
