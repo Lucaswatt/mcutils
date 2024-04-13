@@ -5,7 +5,6 @@
 package mcutils
 
 import (
-	"bufio"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -231,12 +230,9 @@ func WriteFloat64(w io.Writer, floatVlaue float64) error {
 }
 
 // Read a unicode string from a byte buffer, assuming the string is prefixed by a VarInt with the length of the string
-// THIS DOESN'T WORK BUT I DON'T HAVE TIME TO FIX IT AHHHH
-// Reading the entire buffer into a bufio object sets the read cursor to the end of the buffer
+// Had to implement my own utf8 reading system because there is no easy way of reading runes directly from an io.Reader
 func ReadString(r io.Reader) (string, error) {
-	br := bufio.NewReader(r)
-
-	stringLength, err := ReadVarInt(br)
+	stringLength, err := ReadVarInt(r)
 
 	if err != nil {
 		return "", err
@@ -249,10 +245,27 @@ func ReadString(r io.Reader) (string, error) {
 	stringRunes := make([]rune, 0, stringLength)
 
 	for i := 0; i < int(stringLength); i++ {
-		currentRune, _, err := br.ReadRune()
-		if err != nil {
-			return "", err
+		var startByte byte
+		binary.Read(r, binary.BigEndian, &startByte)
+
+		var utf8ByteCount int
+		if startByte&0x80 == 0 { // bitwise AND with 0b1000000 to isolate first bit
+			utf8ByteCount = 1
+		} else if startByte&0xE0 == 0xC0 {
+			utf8ByteCount = 2
+		} else if startByte&0xF0 == 0xE0 {
+			utf8ByteCount = 3
+		} else if startByte&0xF8 == 0xF0 {
+			utf8ByteCount = 4
+		} else {
+			return "", errors.New("Error when reading utf8 rune")
 		}
+
+		remainingBytes := make([]byte, utf8ByteCount-1)
+		binary.Read(r, binary.BigEndian, &remainingBytes)
+		bytes := append([]byte{startByte}, remainingBytes...)
+		currentRune, _ := utf8.DecodeRune(bytes)
+
 		stringRunes = append(stringRunes, currentRune)
 	}
 
